@@ -161,5 +161,48 @@ class Produto {
         }
     }
 
+     /**
+     * Retorna as informações de um produto informado pelo ID
+     * 
+     * @param id_produto 
+     * @returns
+     */
+    // Recebe o ID do produto e retorna um único ProdutoDTO ou null
+    static async listarProduto(id_produto: number): Promise<ProdutoDTO | null> {
+        try {
+            // Query SQL que busca um produto específico pelo ID
+            const querySelectProduto = `SELECT * FROM produto WHERE id_produto = $1;`;
+
+            // Executa a query passando o id_produto como parâmetro (substitui o $1)
+            const respostaBD = await database.query(querySelectProduto, [id_produto]);
+
+            // Se nenhuma linha foi encontrada, retorna null
+            if (respostaBD.rows.length === 0) {
+                return null;
+            }
+
+            // Monta o objeto ProdutoDTO com os dados da primeira linha retornada
+            const produtoDTO: ProdutoDTO = {
+                id_produto: respostaBD.rows[0].id_produto,
+                id_categoria: respostaBD.rows[0].id_categoria,
+                codigo: respostaBD.rows[0].codigo,
+                nome: respostaBD.rows[0].nome,
+                descricao: respostaBD.rows[0].descricao,
+                preco_unitario: respostaBD.rows[0].preco_unitario,
+                quantidade_disponivel: respostaBD.rows[0].quantidade_disponivel,
+                quantidade_minima: respostaBD.rows[0].quantidade_minima,
+                ativo: respostaBD.rows[0].ativo,
+                data_cadastro: respostaBD.rows[0].data_cadastro
+            };
+
+            // Retorna o objeto ProdutoDTO preenchido com os dados do banco
+            return produtoDTO;
+        } catch (error) {
+            // Exibe o erro no console e retorna null em caso de falha
+            console.error(`Erro ao realizar consulta. ${error}`);
+            return null;
+        }
+    }
+
 }
 export default Produto;
