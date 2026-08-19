@@ -22,9 +22,9 @@ class ProdutoController {
         }
     }
 
-     /**
-     *- Busca produto por ID
-     */
+    /**
+    *- Busca produto por ID
+    */
     static async produtoPorId(req: Request, res: Response): Promise<Response> {
         try {
             const id_produto = parseInt(req.params.id_produto as string, 10);
@@ -46,8 +46,8 @@ class ProdutoController {
         }
     }
 
-     /*  Busca produto pelo Código Único 
-     */
+    /*  Busca produto pelo Código Único 
+    */
     static async produtoPorCodigo(req: Request, res: Response): Promise<Response> {
         try {
             const codigo = req.params.codigo as string;
@@ -68,17 +68,17 @@ class ProdutoController {
             return res.status(500).json({ mensagem: "Erro interno no servidor." });
         }
     }
-/**
-     * Rota POST /produtos - Cadastra um novo produto no banco de dados com validações backend
-     */
+    /**
+         * Rota POST /produtos - Cadastra um novo produto no banco de dados com validações backend
+         */
     static async novo(req: Request, res: Response): Promise<Response> {
         try {
             const { id_categoria, codigo, nome, descricao, preco_unitario, quantidade_minima } = req.body;
 
             // VALIDAÇÃO DE DADOS NO BACKEND
             if (!id_categoria || !codigo || !nome || preco_unitario === undefined || quantidade_minima === undefined) {
-                return res.status(400).json({ 
-                    mensagem: "Campos obrigatórios incompletos: id_categoria, codigo, nome, preco_unitario e quantidade_minima devem ser informados." 
+                return res.status(400).json({
+                    mensagem: "Campos obrigatórios incompletos: id_categoria, codigo, nome, preco_unitario e quantidade_minima devem ser informados."
                 });
             }
 
@@ -122,9 +122,9 @@ class ProdutoController {
             return res.status(500).json({ mensagem: "Erro interno no servidor." });
         }
     }
-/**
-     * Rota DELETE /produtos/:id_produto - Desativa um produto (Desativação Lógica - RN18/RN19)
-     */
+    /**
+         * Rota DELETE /produtos/:id_produto - Desativa um produto (Desativação Lógica - RN18/RN19)
+         */
     static async remover(req: Request, res: Response): Promise<Response> {
         try {
             const id_produto = parseInt(req.params.id_produto as string, 10);
@@ -142,6 +142,50 @@ class ProdutoController {
             }
         } catch (error) {
             console.error(`Erro ao desativar produto: ${error}`);
+            return res.status(500).json({ mensagem: "Erro interno no servidor." });
+        }
+    }
+    /**
+         * Rota PUT /produtos/:id_produto - Atualiza as informações do produto
+         */
+    static async atualizar(req: Request, res: Response): Promise<Response> {
+        try {
+            const id_produto = parseInt(req.params.id_produto as string, 10);
+            const { id_categoria, codigo, nome, descricao, preco_unitario, quantidade_minima } = req.body;
+
+            if (isNaN(id_produto)) {
+                return res.status(400).json({ mensagem: "O ID do produto fornecido é inválido." });
+            }
+
+            // Validações no backend
+            if (preco_unitario !== undefined && preco_unitario < 0) {
+                return res.status(400).json({ mensagem: "O preço unitário não pode ser um valor negativo." });
+            }
+
+            if (quantidade_minima !== undefined && quantidade_minima < 0) {
+                return res.status(400).json({ mensagem: "A quantidade mínima não pode ser um valor negativo." });
+            }
+
+            // Instancia o produto e seta o ID
+            const produtoAtualizar = new Produto(
+                id_categoria,
+                codigo,
+                nome,
+                descricao,
+                preco_unitario,
+                quantidade_minima
+            );
+            produtoAtualizar.setIdProduto(id_produto);
+
+            const atualizado = await Produto.atualizarProduto(produtoAtualizar);
+
+            if (atualizado) {
+                return res.status(200).json({ mensagem: "Produto atualizado com sucesso!" });
+            } else {
+                return res.status(400).json({ mensagem: "Não foi possível atualizar o produto. Verifique se ele existe ou está ativo." });
+            }
+        } catch (error) {
+            console.error(`Erro ao atualizar produto: ${error}`);
             return res.status(500).json({ mensagem: "Erro interno no servidor." });
         }
     }
