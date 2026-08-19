@@ -285,6 +285,37 @@ class Produto {
             return false;
         }
     }
+    /**
+     * Remove (desativa) um produto do banco de dados (Desativação Lógica - RN18/RN19)
+     * @param id_produto ID do produto a ser desativado
+     * @returns Boolean indicando se a desativação foi bem-sucedida
+     */
+    // Realiza uma remoção lógica: não apaga o registro, apenas muda o status 'ativo' para FALSE
+    static async removerProduto(id_produto: number): Promise<boolean> {
+        try {
+            // Busca o produto no banco antes de tentar desativar
+            const produto: ProdutoDTO | null = await this.listarProduto(id_produto);
+
+            // Só prossegue se o produto existir e estiver ativo (true)
+            if (produto && produto.ativo) {
+                // Atualiza o status ativo do produto para FALSE
+                const queryDesativarProduto = `UPDATE produto SET ativo = FALSE WHERE id_produto = $1;`;
+
+                // Executa a alteração no banco
+                const result = await database.query(queryDesativarProduto, [id_produto]);
+
+                // Retorna true se alterou com sucesso
+                return result.rowCount !== 0;
+            }
+
+            return false;
+        } catch (error) {
+            console.log(`Erro ao desativar produto: ${error}`);
+            return false;
+        }
+    }
+
+
 
 }
 export default Produto;
