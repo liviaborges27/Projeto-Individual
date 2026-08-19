@@ -68,6 +68,60 @@ class ProdutoController {
             return res.status(500).json({ mensagem: "Erro interno no servidor." });
         }
     }
+/**
+     * Rota POST /produtos - Cadastra um novo produto no banco de dados com validações backend
+     */
+    static async novo(req: Request, res: Response): Promise<Response> {
+        try {
+            const { id_categoria, codigo, nome, descricao, preco_unitario, quantidade_minima } = req.body;
+
+            // VALIDAÇÃO DE DADOS NO BACKEND
+            if (!id_categoria || !codigo || !nome || preco_unitario === undefined || quantidade_minima === undefined) {
+                return res.status(400).json({ 
+                    mensagem: "Campos obrigatórios incompletos: id_categoria, codigo, nome, preco_unitario e quantidade_minima devem ser informados." 
+                });
+            }
+
+            // Validação de Preço Não Negativo (Constraint ck_produto_preco / RN02)
+            if (preco_unitario < 0) {
+                return res.status(400).json({ mensagem: "O preço unitário não pode ser um valor negativo." });
+            }
+
+            // Validação de Quantidade Mínima Não Negativa (Constraint ck_produto_quantidade_minima)
+            if (quantidade_minima < 0) {
+                return res.status(400).json({ mensagem: "A quantidade mínima não pode ser um valor negativo." });
+            }
+
+            // Validação de duplicidade do Código (Constraint UQ_produto_codigo)
+            const produtoExistente = await Produto.buscarPorCodigo(codigo);
+            if (produtoExistente !== null) {
+                return res.status(409).json({ mensagem: "Já existe um produto cadastrado com este código." });
+            }
+
+            // Cria instância da classe Produto
+            const novoProduto = new Produto(
+                id_categoria,
+                codigo,
+                nome,
+                descricao || "",
+                preco_unitario,
+                quantidade_minima
+            );
+
+            // Chama a persistência no banco
+            const cadastroSucesso = await Produto.cadastrarProduto(novoProduto);
+
+            if (cadastroSucesso) {
+                return res.status(201).json({ mensagem: "Produto cadastrado com sucesso!" });
+            } else {
+                return res.status(400).json({ mensagem: "Não foi possível cadastrar o produto no banco de dados." });
+            }
+
+        } catch (error) {
+            console.error(`Erro ao cadastrar produto: ${error}`);
+            return res.status(500).json({ mensagem: "Erro interno no servidor." });
+        }
+    }
 
 
 
