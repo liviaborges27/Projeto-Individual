@@ -122,6 +122,29 @@ class ProdutoController {
             return res.status(500).json({ mensagem: "Erro interno no servidor." });
         }
     }
+/**
+     * Rota DELETE /produtos/:id_produto - Desativa um produto (Desativação Lógica - RN18/RN19)
+     */
+    static async remover(req: Request, res: Response): Promise<Response> {
+        try {
+            const id_produto = parseInt(req.params.id_produto as string, 10);
+
+            if (isNaN(id_produto)) {
+                return res.status(400).json({ mensagem: "O ID do produto fornecido é inválido." });
+            }
+
+            const removido = await Produto.removerProduto(id_produto);
+
+            if (removido) {
+                return res.status(200).json({ mensagem: "Produto desativado com sucesso do sistema." });
+            } else {
+                return res.status(400).json({ mensagem: "Não foi possível desativar o produto. Verifique se ele existe e se está ativo." });
+            }
+        } catch (error) {
+            console.error(`Erro ao desativar produto: ${error}`);
+            return res.status(500).json({ mensagem: "Erro interno no servidor." });
+        }
+    }
 
 
 
