@@ -243,7 +243,48 @@ class Produto {
             return null;
         }
     }
+/**
+     * Cadastra um novo produto no banco de dados
+     * @param produto Objeto Produto contendo as informações a serem cadastradas
+     * @returns Boolean indicando se o cadastro foi bem-sucedido
+     */
+    // Recebe um objeto Produto completo e tenta inseri-lo no banco de dados
+    static async cadastrarProduto(produto: Produto): Promise<boolean> {
+        try {
+            // Query SQL de inserção com placeholders
+            // "RETURNING id_produto" faz o banco retornar o ID gerado automaticamente
+            const queryInsertProduto = `
+                INSERT INTO produto (id_categoria, codigo, nome, descricao, preco_unitario, quantidade_minima)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id_produto;`;
 
+            // Organiza os valores em um array na mesma ordem dos placeholders
+            const valores = [
+                produto.getIdCategoria(),
+                produto.getCodigo().toUpperCase(),
+                produto.getNome().toUpperCase(),
+                produto.getDescricao(),
+                produto.getPrecoUnitario(),
+                produto.getQuantidadeMinima()
+            ];
+
+            // Executa a query passando o array de valores e armazena o resultado
+            const result = await database.query(queryInsertProduto, valores);
+
+            // Verifica se o banco retornou pelo menos uma linha (ou seja, o INSERT funcionou)
+            if (result.rows.length > 0) {
+                console.log(`Produto cadastrado com sucesso. ID: ${result.rows[0].id_produto}`);
+                return true;
+            }
+
+            return false;
+
+        } catch (error) {
+            // Exibe o erro no console e retorna false em caso de exceção
+            console.error(`Erro ao cadastrar produto: ${error}`);
+            return false;
+        }
+    }
 
 }
 export default Produto;
