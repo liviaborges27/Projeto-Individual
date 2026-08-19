@@ -20,12 +20,12 @@ class Produto {
 
     // Construtor: chamado automaticamente ao criar um novo objeto Produto
     constructor(
-        _id_categoria: number,      
-        _codigo: string,             
-        _nome: string,              
-        _descricao: string,         
-        _preco_unitario: number,     
-        _quantidade_minima: number  
+        _id_categoria: number,
+        _codigo: string,
+        _nome: string,
+        _descricao: string,
+        _preco_unitario: number,
+        _quantidade_minima: number
     ) {
         // Atribui os valores recebidos aos atributos internos da classe
         this.id_categoria = _id_categoria;
@@ -92,7 +92,7 @@ class Produto {
     public getQuantidadeMinima(): number {
         return this.quantidade_minima;
     }
-  
+
     public setQuantidadeMinima(value: number) {
         this.quantidade_minima = value;
     }
@@ -161,12 +161,12 @@ class Produto {
         }
     }
 
-     /**
-     * Retorna as informações de um produto informado pelo ID
-     * 
-     * @param id_produto 
-     * @returns
-     */
+    /**
+    * Retorna as informações de um produto informado pelo ID
+    * 
+    * @param id_produto 
+    * @returns
+    */
     // Recebe o ID do produto e retorna um único ProdutoDTO ou null
     static async listarProduto(id_produto: number): Promise<ProdutoDTO | null> {
         try {
@@ -243,11 +243,11 @@ class Produto {
             return null;
         }
     }
-/**
-     * Cadastra um novo produto no banco de dados
-     * @param produto Objeto Produto contendo as informações a serem cadastradas
-     * @returns Boolean indicando se o cadastro foi bem-sucedido
-     */
+    /**
+         * Cadastra um novo produto no banco de dados
+         * @param produto Objeto Produto contendo as informações a serem cadastradas
+         * @returns Boolean indicando se o cadastro foi bem-sucedido
+         */
     // Recebe um objeto Produto completo e tenta inseri-lo no banco de dados
     static async cadastrarProduto(produto: Produto): Promise<boolean> {
         try {
@@ -311,6 +311,56 @@ class Produto {
             return false;
         } catch (error) {
             console.log(`Erro ao desativar produto: ${error}`);
+            return false;
+        }
+    }
+    /**
+         * Atualiza os dados de um produto no banco de dados.
+         * @param produto Objeto do tipo Produto com os novos dados
+         * @returns true caso sucesso, false caso erro
+         */
+    // Recebe um objeto Produto com os dados atualizados e os salva no banco
+    static async atualizarProduto(produto: Produto): Promise<boolean> {
+        try {
+            // Antes de atualizar, verifica se o produto existe e está ativo no banco
+            const produtoConsulta: ProdutoDTO | null = await this.listarProduto(produto.getIdProduto());
+
+            // Só prossegue com a atualização se o produto existir e estiver ativo
+            if (produtoConsulta && produtoConsulta.ativo) {
+                // Query SQL de atualização com placeholders
+                const queryAtualizarProduto = `UPDATE produto SET 
+                                                id_categoria = $1,
+                                                codigo = $2,
+                                                nome = $3,
+                                                descricao = $4,
+                                                preco_unitario = $5,
+                                                quantidade_minima = $6
+                                             WHERE id_produto = $7;`;
+
+                // Organiza os novos valores em um array na mesma ordem dos placeholders
+                const valores = [
+                    produto.getIdCategoria(),
+                    produto.getCodigo().toUpperCase(),
+                    produto.getNome().toUpperCase(),
+                    produto.getDescricao(),
+                    produto.getPrecoUnitario(),
+                    produto.getQuantidadeMinima(),
+                    produto.getIdProduto()
+                ];
+
+                // Executa a query de atualização e armazena o resultado
+                const respostaBD = await database.query(queryAtualizarProduto, valores);
+
+                // Se rowCount for diferente de 0, a atualização funcionou — retorna true
+                if (respostaBD.rowCount !== 0) {
+                    return true;
+                }
+            }
+
+            return false;
+
+        } catch (error) {
+            console.log(`Erro ao atualizar produto: ${error}`);
             return false;
         }
     }
