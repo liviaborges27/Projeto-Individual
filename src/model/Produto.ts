@@ -1,0 +1,165 @@
+// Importa o tipo ProdutoDTO, que define a estrutura de dados de um produto (objeto simples, sem métodos)
+import type ProdutoDTO from "../dto/ProdutoDTO.js";
+// Importa a classe DatabaseModel, responsável por gerenciar a conexão com o banco de dados
+import { DatabaseModel } from "./DatabaseModel.js";
+
+const database = new DatabaseModel().pool;
+
+
+class Produto {
+    private id_produto: number = 0;
+    private id_categoria: number;
+    private codigo: string;
+    private nome: string;
+    private descricao: string;
+    private preco_unitario: number;
+    private quantidade_disponivel: number = 0;
+    private quantidade_minima: number = 0;
+    private ativo: boolean = true;
+    private data_cadastro?: Date | string;
+
+    // Construtor: chamado automaticamente ao criar um novo objeto Produto
+    constructor(
+        _id_categoria: number,      
+        _codigo: string,             
+        _nome: string,              
+        _descricao: string,         
+        _preco_unitario: number,     
+        _quantidade_minima: number  
+    ) {
+        // Atribui os valores recebidos aos atributos internos da classe
+        this.id_categoria = _id_categoria;
+        this.codigo = _codigo;
+        this.nome = _nome;
+        this.descricao = _descricao;
+        this.preco_unitario = _preco_unitario;
+        this.quantidade_minima = _quantidade_minima;
+    }
+
+    public getIdProduto(): number {
+        return this.id_produto;
+    }
+    public setIdProduto(value: number) {
+        this.id_produto = value;
+    }
+
+
+    public getIdCategoria(): number {
+        return this.id_categoria;
+    }
+    public setIdCategoria(value: number) {
+        this.id_categoria = value;
+    }
+
+
+    public getCodigo(): string {
+        return this.codigo;
+    }
+    public setCodigo(value: string) {
+        this.codigo = value;
+    }
+
+
+    public getNome(): string {
+        return this.nome;
+    }
+    public setNome(value: string) {
+        this.nome = value;
+    }
+
+
+    public getDescricao(): string {
+        return this.descricao;
+    }
+    public setDescricao(value: string) {
+        this.descricao = value;
+    }
+
+    public getPrecoUnitario(): number {
+        return this.preco_unitario;
+    }
+    public setPrecoUnitario(value: number) {
+        this.preco_unitario = value;
+    }
+
+    public getQuantidadeDisponivel(): number {
+        return this.quantidade_disponivel;
+    }
+    public setQuantidadeDisponivel(value: number) {
+        this.quantidade_disponivel = value;
+    }
+
+    public getQuantidadeMinima(): number {
+        return this.quantidade_minima;
+    }
+  
+    public setQuantidadeMinima(value: number) {
+        this.quantidade_minima = value;
+    }
+
+
+    public getAtivo(): boolean {
+        return this.ativo;
+    }
+    public setAtivo(value: boolean) {
+        this.ativo = value;
+    }
+
+    public getDataCadastro(): Date | string | undefined {
+        return this.data_cadastro;
+    }
+    public setDataCadastro(value: Date | string) {
+        this.data_cadastro = value;
+    }
+
+
+    /**
+     * Retorna uma lista com todos os produtos cadastrados e ativos no banco de dados
+     * 
+     * @returns Lista com todos os produtos ativos cadastrados no banco de dados
+     */
+    // Método que busca todos os produtos ativos e retorna uma lista de ProdutoDTO ou null
+    static async listarProdutos(): Promise<Array<ProdutoDTO> | null> {
+        // Cria uma lista vazia que vai receber os produtos encontrados no banco
+        let listaDeProdutos: Array<ProdutoDTO> = [];
+
+        try {
+            // Query SQL que busca todos os produtos ativos no sistema (ativo = TRUE)
+            const querySelectProduto = `SELECT * FROM produto WHERE ativo = TRUE ORDER BY nome;`;
+
+            // Executa a query no banco de dados e aguarda o resultado
+            const respostaBD = await database.query(querySelectProduto);
+
+            // Percorre cada linha retornada pelo banco de dados
+            respostaBD.rows.forEach((produto) => {
+                // Monta o objeto ProdutoDTO com os dados da linha atual
+                const produtoDTO: ProdutoDTO = {
+                    id_produto: produto.id_produto,
+                    id_categoria: produto.id_categoria,
+                    codigo: produto.codigo,
+                    nome: produto.nome,
+                    descricao: produto.descricao,
+                    preco_unitario: produto.preco_unitario,
+                    quantidade_disponivel: produto.quantidade_disponivel,
+                    quantidade_minima: produto.quantidade_minima,
+                    ativo: produto.ativo,
+                    data_cadastro: produto.data_cadastro
+                };
+
+                // Adiciona o objeto ProdutoDTO à lista
+                listaDeProdutos.push(produtoDTO);
+            });
+
+            // Retorna a lista com todos os produtos encontrados
+            return listaDeProdutos;
+
+        } catch (error) {
+            // Se ocorrer qualquer erro durante a consulta, exibe no console para facilitar o debug
+            console.log(`Erro ao acessar o modelo: ${error}`);
+            // Retorna null para indicar que houve falha
+            return null;
+        }
+    }
+
+}
+export default Produto;
