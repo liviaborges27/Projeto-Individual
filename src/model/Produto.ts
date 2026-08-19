@@ -204,5 +204,46 @@ class Produto {
         }
     }
 
+    /**
+     * Retorna as informações de um produto através do seu CÓDIGO ÚNICO
+     * 
+     * @param codigo Código único do produto (ex: "PER-001")
+     * @returns Objeto com informações do produto ou null
+     */
+    static async buscarPorCodigo(codigo: string): Promise<ProdutoDTO | null> {
+        try {
+            // Query SQL que busca o produto pelo código único ignorando maiúsculas/minúsculas
+            const querySelectCodigo = `SELECT * FROM produto WHERE LOWER(codigo) = LOWER($1);`;
+
+            // Executa a query passando o código como parâmetro
+            const respostaBD = await database.query(querySelectCodigo, [codigo]);
+
+            // Se não encontrou registros, retorna null
+            if (respostaBD.rows.length === 0) {
+                return null;
+            }
+
+            // Monta o objeto DTO retornado
+            const produtoDTO: ProdutoDTO = {
+                id_produto: respostaBD.rows[0].id_produto,
+                id_categoria: respostaBD.rows[0].id_categoria,
+                codigo: respostaBD.rows[0].codigo,
+                nome: respostaBD.rows[0].nome,
+                descricao: respostaBD.rows[0].descricao,
+                preco_unitario: respostaBD.rows[0].preco_unitario,
+                quantidade_disponivel: respostaBD.rows[0].quantidade_disponivel,
+                quantidade_minima: respostaBD.rows[0].quantidade_minima,
+                ativo: respostaBD.rows[0].ativo,
+                data_cadastro: respostaBD.rows[0].data_cadastro
+            };
+
+            return produtoDTO;
+        } catch (error) {
+            console.error(`Erro ao realizar consulta por código. ${error}`);
+            return null;
+        }
+    }
+
+
 }
 export default Produto;
