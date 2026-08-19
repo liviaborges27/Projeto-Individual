@@ -22,5 +22,30 @@ class ProdutoController {
         }
     }
 
+     /**
+     *- Busca produto por ID
+     */
+    static async produtoPorId(req: Request, res: Response): Promise<Response> {
+        try {
+            const id_produto = parseInt(req.params.id_produto as string, 10);
+
+            if (isNaN(id_produto)) {
+                return res.status(400).json({ mensagem: "O ID do produto fornecido é inválido." });
+            }
+
+            const produto: ProdutoDTO | null = await Produto.listarProduto(id_produto);
+
+            if (produto !== null) {
+                return res.status(200).json(produto);
+            } else {
+                return res.status(404).json({ mensagem: "Produto não encontrado." });
+            }
+        } catch (error) {
+            console.error(`Erro ao buscar produto por ID: ${error}`);
+            return res.status(500).json({ mensagem: "Erro interno no servidor." });
+        }
+    }
+
+
 }
 export default ProdutoController;
