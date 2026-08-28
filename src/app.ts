@@ -1,4 +1,4 @@
-import { DatabaseModel } from "./src/model/DatabaseModel.js";
+import { DatabaseModel } from "./model/DatabaseModel.js";
 import { server } from "./server.js";
 const port: number = Number.parseInt(process.env.PORT ?? "3333", 10);
 const host: string = process.env.HOST ?? "localhost";

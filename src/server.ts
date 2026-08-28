@@ -6,7 +6,7 @@ import express from "express";
 // Ex: front-end em localhost:3000 tentando acessar API em localhost:3333 seria bloqueado sem CORS
 import cors from "cors";
 // Importa o router criado no arquivo routes.ts — contém todos os endpoints da aplicação
-import { router } from "./routes.js";
+import { router } from "./src/routes.js";
 
 /**
  * Cria servidor express
