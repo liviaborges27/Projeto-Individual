@@ -1,147 +1,101 @@
-import type CategoriaDTO from "../dto/CategoriaDTO.js";
 import { DatabaseModel } from "./DatabaseModel.js";
+import type CategoriaDTO from "../dto/CategoriaDTO.js";
 
 const database = new DatabaseModel().pool;
 
-class Categoria {
-    private id_categoria: number = 0;
-    private nome: string;
-    private descricao: string;
-    private ativo: boolean = true;
-    private data_cadastro?: Date | string;
+export default class Categoria {
+    id_categoria?: number;
+    nome: string;
+    descricao?: string;
+    ativo?: boolean;
+    data_cadastro?: Date | string;
 
-    constructor(_nome: string, _descricao: string = "") {
-        this.nome = _nome;
-        this.descricao = _descricao;
+    constructor(nome: string, descricao: string = "") {
+        this.nome = nome;
+        this.descricao = descricao;
+        this.ativo = true;
     }
 
-    // Getters e Setters
-    public getIdCategoria(): number { return this.id_categoria; }
-    public setIdCategoria(value: number) { this.id_categoria = value; }
-
-    public getNome(): string { return this.nome; }
-    public setNome(value: string) { this.nome = value; }
-
-    public getDescricao(): string { return this.descricao; }
-    public setDescricao(value: string) { this.descricao = value; }
-
-    public getAtivo(): boolean { return this.ativo; }
-    public setAtivo(value: boolean) { this.ativo = value; }
-
-    public getDataCadastro(): Date | string | undefined { return this.data_cadastro; }
-    public setDataCadastro(value: Date | string) { this.data_cadastro = value; }
-
-    /**
-     * Lista todas as categorias ativas
-     */
     static async listarCategorias(): Promise<Array<CategoriaDTO> | null> {
-        let lista: Array<CategoriaDTO> = [];
         try {
             const query = `SELECT * FROM categoria WHERE ativo = TRUE ORDER BY nome;`;
             const respostaBD = await database.query(query);
 
-            respostaBD.rows.forEach((cat) => {
-                const dto: CategoriaDTO = {
-                    id_categoria: cat.id_categoria,
-                    nome: cat.nome,
-                    descricao: cat.descricao,
-                    ativo: cat.ativo,
-                    data_cadastro: cat.data_cadastro
-                };
-                lista.push(dto);
-            });
-
-            return lista;
+            return respostaBD.rows.map((categoria: any) => ({
+                id_categoria: categoria.id_categoria,
+                nome: categoria.nome,
+                ativo: categoria.ativo,
+                data_cadastro: categoria.data_cadastro
+            }));
         } catch (error) {
-            console.error(`Erro ao listar categorias: ${error}`);
+            console.error("Erro ao listar categorias:", error);
             return null;
         }
     }
 
-    /**
-     * Busca uma categoria pelo ID
-     */
     static async buscarPorId(id_categoria: number): Promise<CategoriaDTO | null> {
         try {
             const query = `SELECT * FROM categoria WHERE id_categoria = $1;`;
             const respostaBD = await database.query(query, [id_categoria]);
 
-            if (respostaBD.rows.length === 0) return null;
+            if (respostaBD.rows.length === 0) {
+                return null;
+            }
 
-            const cat = respostaBD.rows[0];
+            const categoria = respostaBD.rows[0];
             return {
-                id_categoria: cat.id_categoria,
-                nome: cat.nome,
-                descricao: cat.descricao,
-                ativo: cat.ativo,
-                data_cadastro: cat.data_cadastro
+                id_categoria: categoria.id_categoria,
+                nome: categoria.nome,
+                ativo: categoria.ativo,
+                data_cadastro: categoria.data_cadastro
             };
         } catch (error) {
-            console.error(`Erro ao buscar categoria por ID: ${error}`);
+            console.error("Erro ao buscar categoria por id:", error);
             return null;
         }
     }
 
-    /**
-     * Cadastra uma nova categoria no banco de dados
-     */
     static async cadastrarCategoria(categoria: Categoria): Promise<boolean> {
         try {
             const query = `
-                INSERT INTO categoria (nome, descricao)
-                VALUES ($1, $2)
-                RETURNING id_categoria;`;
+                INSERT INTO categoria (nome, ativo)
+                VALUES ($1, TRUE)
+                RETURNING id_categoria;
+            `;
 
-            const valores = [
-                categoria.getNome().toUpperCase(),
-                categoria.getDescricao()
-            ];
-
-            const result = await database.query(query, valores);
-            return result.rows.length > 0;
+            const respostaBD = await database.query(query, [categoria.nome]);
+            return (respostaBD.rowCount ?? 0) > 0;
         } catch (error) {
-            console.error(`Erro ao cadastrar categoria: ${error}`);
+            console.error("Erro ao cadastrar categoria:", error);
             return false;
         }
     }
 
-    /**
-     * Atualiza dados de uma categoria
-     */
-    static async atualizarCategoria(categoria: Categoria): Promise<boolean> {
+    static async atualizarCategoria(id_categoria: number, nome: string, ativo: boolean = true): Promise<boolean> {
         try {
             const query = `
-                UPDATE categoria 
-                SET nome = $1, descricao = $2
-                WHERE id_categoria = $3;`;
+                UPDATE categoria
+                SET nome = $1,
+                    ativo = $2
+                WHERE id_categoria = $3;
+            `;
 
-            const valores = [
-                categoria.getNome().toUpperCase(),
-                categoria.getDescricao(),
-                categoria.getIdCategoria()
-            ];
-
-            const result = await database.query(query, valores);
-            return result.rowCount !== 0;
+            const respostaBD = await database.query(query, [nome, ativo, id_categoria]);
+            return (respostaBD.rowCount ?? 0) > 0;
         } catch (error) {
-            console.error(`Erro ao atualizar categoria: ${error}`);
+            console.error("Erro ao atualizar categoria:", error);
             return false;
         }
     }
 
-    /**
-     * Remoção lógica (Desativação)
-     */
     static async removerCategoria(id_categoria: number): Promise<boolean> {
         try {
             const query = `UPDATE categoria SET ativo = FALSE WHERE id_categoria = $1;`;
-            const result = await database.query(query, [id_categoria]);
-            return result.rowCount !== 0;
+            const respostaBD = await database.query(query, [id_categoria]);
+            return (respostaBD.rowCount ?? 0) > 0;
         } catch (error) {
-            console.error(`Erro ao desativar categoria: ${error}`);
+            console.error("Erro ao remover categoria:", error);
             return false;
         }
     }
 }
-
-export default Categoria;

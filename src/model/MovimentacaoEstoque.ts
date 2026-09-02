@@ -1,119 +1,106 @@
-import type MovimentacaoDTO from "../dto/MovimentacaoDTO.js";
 import { DatabaseModel } from "./DatabaseModel.js";
 
 const database = new DatabaseModel().pool;
 
-class MovimentacaoEstoque {
-    private id_movimentacao: number = 0;
-    private id_produto: number;
-    private tipo: 'ENTRADA' | 'SAIDA';
-    private quantidade: number;
-    private observacao: string;
-    private data_movimentacao?: Date | string;
+export default class MovimentacaoEstoque {
+    id_produto: number;
+    tipo: 'ENTRADA' | 'SAIDA';
+    quantidade: number;
+    observacao: string;
 
-    constructor(_id_produto: number, _tipo: 'ENTRADA' | 'SAIDA', _quantidade: number, _observacao: string = "") {
-        this.id_produto = _id_produto;
-        this.tipo = _tipo;
-        this.quantidade = _quantidade;
-        this.observacao = _observacao;
+    constructor(id_produto: number, tipo: 'ENTRADA' | 'SAIDA', quantidade: number, observacao: string) {
+        this.id_produto = id_produto;
+        this.tipo = tipo;
+        this.quantidade = quantidade;
+        this.observacao = observacao;
     }
 
-    // Getters e Setters
-    public getIdMovimentacao(): number { return this.id_movimentacao; }
-    public setIdMovimentacao(value: number) { this.id_movimentacao = value; }
-
-    public getIdProduto(): number { return this.id_produto; }
-    public setIdProduto(value: number) { this.id_produto = value; }
-
-    public getTipo(): 'ENTRADA' | 'SAIDA' { return this.tipo; }
-    public setTipo(value: 'ENTRADA' | 'SAIDA') { this.tipo = value; }
-
-    public getQuantidade(): number { return this.quantidade; }
-    public setQuantidade(value: number) { this.quantidade = value; }
-
-    public getObservacao(): string { return this.observacao; }
-    public setObservacao(value: string) { this.observacao = value; }
-
-    public getDataMovimentacao(): Date | string | undefined { return this.data_movimentacao; }
-
     /**
-     * Lista todas as movimentações registradas
+     * Lista todas as movimentações com JOIN em produto
      */
-    static async listarMovimentacoes(): Promise<Array<MovimentacaoDTO> | null> {
-        let lista: Array<MovimentacaoDTO> = [];
+    static async listarMovimentacoes(): Promise<Array<any> | null> {
         try {
-            const query = `SELECT * FROM movimentacao_estoque ORDER BY data_movimentacao DESC;`;
+            const query = `
+                SELECT 
+                    m.id_movimentacao,
+                    m.id_produto,
+                    p.codigo AS codigo_produto,
+                    p.nome AS nome_produto,
+                    m.tipo,
+                    m.motivo,
+                    m.quantidade,
+                    m.preco_unitario_praticado,
+                    m.valor_total,
+                    m.observacao,
+                    m.data_movimentacao
+                FROM movimentacao m
+                INNER JOIN produto p ON p.id_produto = m.id_produto
+                ORDER BY m.data_movimentacao DESC;
+            `;
+
             const respostaBD = await database.query(query);
-
-            respostaBD.rows.forEach((row) => {
-                lista.push({
-                    id_movimentacao: row.id_movimentacao,
-                    id_produto: row.id_produto,
-                    tipo: row.tipo,
-                    quantidade: row.quantidade,
-                    observacao: row.observacao,
-                    data_movimentacao: row.data_movimentacao
-                });
-            });
-
-            return lista;
+            return respostaBD.rows;
         } catch (error) {
-            console.error(`Erro ao listar movimentações: ${error}`);
+            console.error("Erro detalhado ao buscar movimentações:", error);
             return null;
         }
     }
 
     /**
-     * ROTA ESPECÍFICA: Busca histórico de movimentações filtrando por id_produto
+     * Busca movimentações filtradas por produto
      */
-    static async buscarPorProduto(id_produto: number): Promise<Array<MovimentacaoDTO> | null> {
-        let lista: Array<MovimentacaoDTO> = [];
+    static async buscarPorProduto(id_produto: number): Promise<Array<any> | null> {
         try {
-            const query = `SELECT * FROM movimentacao_estoque WHERE id_produto = $1 ORDER BY data_movimentacao DESC;`;
+            const query = `
+                SELECT 
+                    m.id_movimentacao,
+                    m.id_produto,
+                    p.codigo AS codigo_produto,
+                    p.nome AS nome_produto,
+                    m.tipo,
+                    m.motivo,
+                    m.quantidade,
+                    m.preco_unitario_praticado,
+                    m.valor_total,
+                    m.observacao,
+                    m.data_movimentacao
+                FROM movimentacao m
+                INNER JOIN produto p ON p.id_produto = m.id_produto
+                WHERE m.id_produto = $1
+                ORDER BY m.data_movimentacao DESC;
+            `;
+
             const respostaBD = await database.query(query, [id_produto]);
-
-            respostaBD.rows.forEach((row) => {
-                lista.push({
-                    id_movimentacao: row.id_movimentacao,
-                    id_produto: row.id_produto,
-                    tipo: row.tipo,
-                    quantidade: row.quantidade,
-                    observacao: row.observacao,
-                    data_movimentacao: row.data_movimentacao
-                });
-            });
-
-            return lista;
+            return respostaBD.rows;
         } catch (error) {
-            console.error(`Erro ao buscar movimentações do produto: ${error}`);
+            console.error("Erro ao buscar movimentações do produto:", error);
             return null;
         }
     }
 
     /**
-     * Cadastra nova movimentação no banco
+     * Registra uma nova movimentação
      */
     static async registrarMovimentacao(movimentacao: MovimentacaoEstoque): Promise<boolean> {
         try {
             const query = `
-                INSERT INTO movimentacao_estoque (id_produto, tipo, quantidade, observacao)
-                VALUES ($1, $2, $3, $4)
-                RETURNING id_movimentacao;`;
-
-            const valores = [
-                movimentacao.getIdProduto(),
-                movimentacao.getTipo(),
-                movimentacao.getQuantidade(),
-                movimentacao.getObservacao()
+                INSERT INTO movimentacao (id_produto, tipo, motivo, quantidade, observacao)
+                VALUES ($1, $2, $3, $4, $5);
+            `;
+            const motivo = movimentacao.tipo === 'ENTRADA' ? 'RECEBIMENTO' : 'USO_INTERNO';
+            const params = [
+                movimentacao.id_produto,
+                movimentacao.tipo,
+                motivo,
+                movimentacao.quantidade,
+                movimentacao.observacao
             ];
 
-            const result = await database.query(query, valores);
-            return result.rows.length > 0;
+            const respostaBD = await database.query(query, params);
+            return (respostaBD.rowCount ?? 0) > 0;
         } catch (error) {
-            console.error(`Erro ao registrar movimentação: ${error}`);
+            console.error("Erro ao registrar movimentação:", error);
             return false;
         }
     }
 }
-
-export default MovimentacaoEstoque;

@@ -56,30 +56,26 @@ class CategoriaController {
     }
 
     static async atualizar(req: Request, res: Response): Promise<Response> {
-        try {
-            const id_categoria = parseInt(req.params.id_categoria as string, 10);
-            const { nome, descricao } = req.body;
+    try {
+        const id_categoria = Number(req.params.id_categoria);
+        const { nome, ativo } = req.body;
 
-            if (isNaN(id_categoria)) {
-                return res.status(400).json({ mensagem: "O ID fornecido é inválido." });
-            }
-
-            if (!nome || typeof nome !== "string" || nome.trim().length < 2) {
-                return res.status(400).json({ mensagem: "Nome da categoria inválido." });
-            }
-
-            const categoriaAtualizar = new Categoria(nome.trim(), descricao || "");
-            categoriaAtualizar.setIdCategoria(id_categoria);
-
-            const atualizado = await Categoria.atualizarCategoria(categoriaAtualizar);
-            if (atualizado) {
-                return res.status(200).json({ mensagem: "Categoria atualizada com sucesso!" });
-            }
+        if (isNaN(id_categoria) || !nome) {
             return res.status(400).json({ mensagem: "Não foi possível atualizar a categoria." });
-        } catch (error) {
-            return res.status(500).json({ mensagem: "Erro interno no servidor." });
         }
+
+        const atualizado = await Categoria.atualizarCategoria(id_categoria, nome, ativo ?? true);
+
+        if (atualizado) {
+            return res.status(200).json({ mensagem: "Categoria atualizada com sucesso!" });
+        } else {
+            return res.status(400).json({ mensagem: "Não foi possível atualizar a categoria." });
+        }
+    } catch (error) {
+        console.error("Erro no controller ao atualizar categoria:", error);
+        return res.status(500).json({ mensagem: "Erro interno no servidor." });
     }
+}
 
     static async remover(req: Request, res: Response): Promise<Response> {
         try {

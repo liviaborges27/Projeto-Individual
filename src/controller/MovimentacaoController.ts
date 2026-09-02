@@ -4,6 +4,9 @@ import Produto from "../model/Produto.js";
 
 class MovimentacaoController {
 
+    /**
+     * GET /movimentacoes - Lista todas as movimentações
+     */
     static async todas(req: Request, res: Response): Promise<Response> {
         try {
             const lista = await MovimentacaoEstoque.listarMovimentacoes();
@@ -12,12 +15,13 @@ class MovimentacaoController {
             }
             return res.status(400).json({ mensagem: "Erro ao buscar movimentações." });
         } catch (error) {
+            console.error("Erro no controller ao listar movimentações:", error);
             return res.status(500).json({ mensagem: "Erro interno no servidor." });
         }
     }
 
     /**
-     * ROTA ESPECÍFICA: GET /movimentacoes/produto/:id_produto
+     * GET /movimentacoes/produto/:id_produto - Lista movimentações por produto
      */
     static async porProduto(req: Request, res: Response): Promise<Response> {
         try {
@@ -33,18 +37,18 @@ class MovimentacaoController {
             }
             return res.status(404).json({ mensagem: "Nenhuma movimentação encontrada para o produto informado." });
         } catch (error) {
+            console.error("Erro no controller ao buscar por produto:", error);
             return res.status(500).json({ mensagem: "Erro interno no servidor." });
         }
     }
 
     /**
-     * POST /movimentacoes - Registra movimentação com validação do back-end
+     * POST /movimentacoes - Registra movimentação de estoque
      */
     static async nova(req: Request, res: Response): Promise<Response> {
         try {
             const { id_produto, tipo, quantidade, observacao } = req.body;
 
-            // VALIDAÇÕES DE DADOS NO BACKEND
             if (!id_produto || isNaN(Number(id_produto))) {
                 return res.status(400).json({ mensagem: "O ID do produto é obrigatório e deve ser numérico." });
             }
@@ -59,7 +63,6 @@ class MovimentacaoController {
                 return res.status(400).json({ mensagem: "A quantidade deve ser um número inteiro positivo maior que zero." });
             }
 
-            // Valida se o produto existe e está ativo antes de movimentar estoque
             const produtoExistente = await Produto.listarProduto(Number(id_produto));
             if (!produtoExistente || !produtoExistente.ativo) {
                 return res.status(404).json({ mensagem: "Produto não encontrado ou desativado no sistema." });
@@ -79,6 +82,7 @@ class MovimentacaoController {
             }
             return res.status(400).json({ mensagem: "Não foi possível registrar a movimentação." });
         } catch (error) {
+            console.error("Erro no controller ao registrar movimentação:", error);
             return res.status(500).json({ mensagem: "Erro interno no servidor." });
         }
     }
