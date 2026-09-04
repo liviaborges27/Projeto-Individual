@@ -1,0 +1,113 @@
+import jwt from 'jsonwebtoken';
+import { type Request, type Response, type NextFunction } from 'express';
+import { DatabaseModel } from '../model/DatabaseModel.js';
+
+const SECRET = 'infotech_secret_key_2026';
+const database = new DatabaseModel().pool;
+
+interface JwtPayload {
+    id: number;
+    nome: string;
+    email: string;
+    perfil: string;
+    exp: number;
+}
+
+export class Auth {
+
+    /**
+     * Valida as credenciais do usuário no banco de dados e gera o token JWT
+     */
+    static async validacaoUsuario(req: Request, res: Response): Promise<any> {
+        const { email, senha } = req.body;
+
+        const querySelectUser = `SELECT id_usuario, nome, email, senha, perfil FROM usuario WHERE email=$1 AND senha=$2;`;
+
+        try {
+            const queryResult = await database.query(querySelectUser, [email, senha]);
+
+            if (queryResult.rowCount !== 0) {
+                const usuario = {
+                    id_usuario: queryResult.rows[0].id_usuario,
+                    nome: queryResult.rows[0].nome,
+                    email: queryResult.rows[0].email,
+                    perfil: queryResult.rows[0].perfil
+                };
+
+                const tokenUsuario = Auth.generateToken(
+                    parseInt(usuario.id_usuario), 
+                    usuario.nome, 
+                    usuario.email, 
+                    usuario.perfil
+                );
+
+                return res.status(200).json({ 
+                    auth: true, 
+                    token: tokenUsuario, 
+                    usuario: usuario 
+                });
+            } else {
+                return res.status(401).json({ 
+                    auth: false, 
+                    token: null, 
+                    message: "E-mail e/ou senha incorretos" 
+                });
+            }
+        } catch (error) {
+            console.log(`Erro ao autenticar usuário: ${error}`);
+            return res.status(500).json({ message: "Erro interno do servidor" });
+        }
+    }
+
+    /**
+     * Gera o token JWT para o usuário
+     */
+    static generateToken(id: number, nome: string, email: string, perfil: string) {
+        return jwt.sign({ id, nome, email, perfil }, SECRET, { expiresIn: '8h' });
+    }
+
+    /**
+     * Middleware para verificar se a requisição possui um token válido
+     */
+    static verifyToken(req: Request, res: Response, next: NextFunction) {
+        const token = req.headers['x-access-token'] as string;
+
+        if (!token) {
+            console.log('Token não informado');
+            return res.status(401).json({ message: "Token não informado", auth: false }).end();
+        }
+
+        jwt.verify(token, SECRET, (err, decoded) => {
+            if (err) {
+                if (err.name === 'TokenExpiredError') {
+                    console.log('Token expirado');
+                    return res.status(401).json({ message: "Token expirado, faça o login novamente", auth: false }).end();
+                } else {
+                    console.log('Token inválido.');
+                    return res.status(401).json({ message: "Token inválido, faça o login", auth: false }).end();
+                }
+            }
+
+            if (!decoded) {
+                console.log('Token não pôde ser decodificado');
+                return res.status(401).json({ message: "Token inválido, faça o login", auth: false }).end();
+            }
+
+            const { exp, id } = decoded as JwtPayload;
+
+            if (!exp || !id) {
+                console.log('Data de expiração ou ID não encontrada no token');
+                return res.status(401).json({ message: "Token inválido, faça o login", auth: false }).end();
+            }
+
+            const currentTime = Math.floor(Date.now() / 1000);
+            if (currentTime > exp) {
+                console.log('Token expirado');
+                return res.status(401).json({ message: "Token expirado, faça o login novamente", auth: false }).end();
+            }
+
+            req.headers['userId'] = String(id);
+            next();
+        });
+    }
+}

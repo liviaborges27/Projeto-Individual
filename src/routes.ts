@@ -3,6 +3,7 @@ import { Router, type Request, type Response } from "express";
 import ProdutoController from "./controller/ProdutoController.js";
 import CategoriaController from "./controller/CategoriaController.js";
 import MovimentacaoController from "./controller/MovimentacaoController.js";
+import { Auth } from "./middleware/Auth.js";
 
 const router = Router();
 
@@ -14,6 +15,9 @@ router.get('/', (req: Request, res: Response) => {
         .status(200)
         .json(`Aplicação online. Timestamp: ${new Date()}`);
 });
+
+
+router.post("/login", Auth.validacaoUsuario);
 
 /* ==========================================================================
    ROTAS DE PRODUTOS
