@@ -114,26 +114,19 @@ class Produto {
 
 
     /**
-     * Retorna uma lista com todos os produtos cadastrados e ativos no banco de dados
-     * 
-     * @returns Lista com todos os produtos ativos cadastrados no banco de dados
+     * Retorna todos os produtos cadastrados no banco de dados.
      */
-    // Método que busca todos os produtos ativos e retorna uma lista de ProdutoDTO ou null
     static async listarProdutos(): Promise<Array<ProdutoDTO> | null> {
-        // Cria uma lista vazia que vai receber os produtos encontrados no banco
-        let listaDeProdutos: Array<ProdutoDTO> = [];
-
         try {
-            // Query SQL que busca todos os produtos ativos no sistema (ativo = TRUE)
-            const querySelectProduto = `SELECT * FROM produto WHERE ativo = TRUE ORDER BY nome;`;
-
-            // Executa a query no banco de dados e aguarda o resultado
+            const querySelectProduto = `SELECT * FROM produto;`;
             const respostaBD = await database.query(querySelectProduto);
 
-            // Percorre cada linha retornada pelo banco de dados
-            respostaBD.rows.forEach((produto) => {
-                // Monta o objeto ProdutoDTO com os dados da linha atual
-                const produtoDTO: ProdutoDTO = {
+            console.log("Resultado da consulta de produtos:", {
+                quantidade: respostaBD.rowCount ?? respostaBD.rows.length,
+                resultado: respostaBD.rows
+            });
+
+            return respostaBD.rows.map((produto): ProdutoDTO => ({
                     id_produto: produto.id_produto,
                     id_categoria: produto.id_categoria,
                     codigo: produto.codigo,
@@ -144,19 +137,10 @@ class Produto {
                     quantidade_minima: produto.quantidade_minima,
                     ativo: produto.ativo,
                     data_cadastro: produto.data_cadastro
-                };
-
-                // Adiciona o objeto ProdutoDTO à lista
-                listaDeProdutos.push(produtoDTO);
-            });
-
-            // Retorna a lista com todos os produtos encontrados
-            return listaDeProdutos;
+            }));
 
         } catch (error) {
-            // Se ocorrer qualquer erro durante a consulta, exibe no console para facilitar o debug
-            console.log(`Erro ao acessar o modelo: ${error}`);
-            // Retorna null para indicar que houve falha
+            console.error(`Erro ao acessar o modelo: ${error}`);
             return null;
         }
     }

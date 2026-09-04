@@ -23,7 +23,10 @@ router.post("/login", Auth.validacaoUsuario);
    ROTAS DE PRODUTOS
    ========================================================================== */
 // GET /api/produtos — busca e retorna a lista completa de produtos ativos
-router.get('/api/produtos', ProdutoController.todos);
+router.get('/api/produtos', Auth.verifyToken, ProdutoController.todos);
+
+// Alias para clientes que usam GET /produtos
+router.get('/produtos', Auth.verifyToken, ProdutoController.todos);
 
 // GET /api/produtos/codigo/:codigo — busca produto pelo CÓDIGO ÚNICO
 router.get('/api/produtos/codigo/:codigo', ProdutoController.produtoPorCodigo);

@@ -21,7 +21,7 @@ export class Auth {
     static async validacaoUsuario(req: Request, res: Response): Promise<any> {
         const { email, senha } = req.body;
 
-        const querySelectUser = `SELECT id_usuario, nome, email, senha, perfil FROM usuario WHERE email=$1 AND senha=$2;`;
+        const querySelectUser = `SELECT id_usuario, nome, email, senha FROM usuario WHERE email=$1 AND senha=$2;`;
 
         try {
             const queryResult = await database.query(querySelectUser, [email, senha]);
@@ -31,7 +31,7 @@ export class Auth {
                     id_usuario: queryResult.rows[0].id_usuario,
                     nome: queryResult.rows[0].nome,
                     email: queryResult.rows[0].email,
-                    perfil: queryResult.rows[0].perfil
+                    perfil: 'OPERADOR'
                 };
 
                 const tokenUsuario = Auth.generateToken(
