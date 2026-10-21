@@ -2,8 +2,8 @@
   "name": "back-end",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
- "scripts": {
+  "main": "dist/app.js",
+  "scripts": {
     "build": "tsc",
     "start": "node dist/app.js"
   },
